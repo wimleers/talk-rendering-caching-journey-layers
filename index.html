@@ -1,0 +1,356 @@
+<!doctype html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+		<title>Rendering &amp; caching: a journey through the layers</title>
+
+		<link rel="stylesheet" href="src/reveal.js/css/reveal.css">
+		<link rel="stylesheet" href="src/reveal.js/css/theme/black.css">
+
+		<!-- Theme used for syntax highlighting of code -->
+		<link rel="stylesheet" href="src/reveal.js/lib/css/zenburn.css">
+		<style>
+			.reveal table td {
+				border-bottom: none;
+			}
+			.reveal table caption {
+				border-bottom: 1px solid;
+				border-top: 1px solid;
+				padding-bottom: .25em;
+				padding-top: .25em;
+				margin-bottom: .5em;
+			}
+			.reveal table tr.exception td {
+				opacity: 0.6;
+			}
+			.reveal pre.fullscreen {
+				margin-top: 0;
+				left: -10%;
+				width: 120%;
+			}
+			.reveal pre.fullscreen code {
+				max-height: none;
+			}
+		</style>
+
+		<!-- Printing and PDF exports -->
+		<script>
+			var link = document.createElement( 'link' );
+			link.rel = 'stylesheet';
+			link.type = 'text/css';
+			link.href = window.location.search.match( /print-pdf/gi ) ? 'src/reveal.js/css/print/pdf.css' : 'src/reveal.js/css/print/paper.css';
+			document.getElementsByTagName( 'head' )[0].appendChild( link );
+		</script>
+	</head>
+	<body>
+		<div class="reveal">
+			<div class="slides">
+				<section id="intro" data-background="img/19bbg4cwuf7tyjpg.jpg" data-background-via="http://i.kinja-img.com/gawker-media/image/upload/s--w3wd0uOT--/19bbg4cwuf7tyjpg.jpg">
+					<h2>Rendering &amp; Caching</h2>
+					<h3><em>a journey through the layers</em></h3>
+					<hr>
+					<div>
+						<p style="font-size: 70%">Wim Leers
+							<br><small style="vertical-align: baseline">Principal Software Engineer
+								<br><img src="img/acquia.png" alt="Acquia logo" style="border:none;height:1em;background:none;margin:0;">'s Office of the CTO</small>
+						</p>
+					</div>
+				</section>
+
+				<section id="practical" data-background="img/19bbg4cwuf7tyjpg.jpg" data-background-via="http://i.kinja-img.com/gawker-media/image/upload/s--w3wd0uOT--/19bbg4cwuf7tyjpg.jpg">
+					<img src="img/practical.jpg" width="40%" via="https://www.abebooks.com/9781853262876/Journey-Centre-Earth-Wordsworth-Classics-1853262870/plp">
+					<aside class="notes">
+						The goal of this talk is not to explain the technical details, but to help you in practice, by giving you a concrete understanding of how these layers cooperate.
+					</aside>
+				</section>
+				
+				<section>
+					<section id="foundations--cache" style="font-size:90%">
+						<table>
+							<caption>Principle of caching</caption>
+							<tr><td>inputs</td><td> → 🤖…💪…🤖…💪…🤖…💪</td><td>→ output<td></tr>
+							<tr><td>inputs</td><td> → cache ID → read</td><td> → output</td></tr>
+						</table>
+						<table class="fragment" style="margin-top: 100px">
+							<caption>Changed inputs: cache tags + contexts</caption>
+							<tr><td>tags</td><td>stored data</td><td>🏓&nbsp;&nbsp;&nbsp;→&nbsp;&nbsp;&nbsp;🏂</td></tr>
+							<tr><td>contexts</td><td>circumstances</td><td>☂️&nbsp;&nbsp;↔&nbsp;&nbsp;☔️</td></tr>
+							<tr class="fragment exception"><td style="padding-top: .5em;">max-age</td><td>freshness</td><td>🕰️&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;📈</td></tr>
+						</table>
+						<aside class="notes">
+							As I'm sure you all know, caching is about avoiding expensive computations by storing the computed output. Drupal 8 uses this extensively, as we'll see.<br>
+							Caching is trivial. What is not trivial, is cache invalidation. The joke is <q>There are only two hard problems in computer science, cache invalidation and naming things</q>. Because whenever the inputs change, even in the tiniest way, we need to ensure the cached output is not used. Drupal 7 and earlier is very bad at this. Most CMSes are! Because usually they fail to recognize <em>all</em> inputs. For example, they'll assume the output only depends on the URL.<br>
+							Drupal 8 has solved the cache invalidation problem, through two key concepts: tags and contexts. Tags enable us to know when stored data has changed — stored data which is used in the computed output, for example an author's hobby might have changed. Contexts enable us to vary consistently by circumstance, for example whether it's raining or not, whether the current user has a certain permission or not, and so on.
+					</section>
+					<section id="foundations--render-pipeline--details">
+						<figure>
+							<table>
+								<tr>
+									<td><img src="img/d8_render_pipeline-thumbnail.png" style="border: none; background: none;" via="https://www.drupal.org/docs/8/api/render-api/the-drupal-8-render-pipeline">
+									</td>
+									<td style="vertical-align: middle"><span style="font-size: 250%">😵</span></td>
+								</tr>
+							</table>
+							<figcaption><a href="http://wimleers.com/talk/drupal-8-render-pipeline">wimleers.com/talk/drupal-8-render-pipeline</a></figcaption>
+						</figure>
+						<aside class="notes">
+							I said I'd stay pragmatic, so I'm not going to take you through all details of the Drupal 8 render pipeline. For that, see my talk from 2.5 years ago. It's still accurate.</aside>
+					</section>
+					<section id="foundations--render-pipeline--pragmatic">
+						scan drawing
+					</section>
+					<section id="foundations--render-pipeline--3-big-caching-layers">
+						<table>
+							<caption>3 caching layers in Render Pipeline</caption>
+							<tr><td>Render Cache</td><td>fragments</td><td>all</td></tr>
+							<tr><td>Dynamic Page Cache</td><td>partial responses</td><td>all</td></tr>
+							<tr><td>Page Cache</td><td>final responses</td><td>anon</td></tr>
+						</table>
+						<aside class="notes">
+							
+						</aside>
+					</section>
+				</section>
+				
+				
+				<section>
+					<section id="use-case--1-uncacheable">
+						<pre class="fullscreen"><code class="php">/**
+ * @Block(
+ *   id = "journey_talk_uncacheable_block",
+ *   admin_label = @Translation("Uncacheable block"),
+ * )
+ */
+class UncacheableBlock extends BlockBase {
+
+  public function build() {
+    sleep(1); // Pretend we're computing a better forecast 👍
+    return [
+      '#markup' => $this->t('<p>Weather forecast at @time: ☔️.</p>', [
+        '@time' => (int) microtime(TRUE),
+      ]),
+    ];
+  }
+
+  public function getCacheMaxAge() {
+    return 0;
+  }
+
+}</code></pre>
+						<aside class="notes">
+							Clearly we're dealing with Belgian weather forecast. Anybody from the U.K. will also feel right at home!
+						</aside>
+					</section>
+					<section id="use-case--2">
+						<pre class="fullscreen"><code class="php">/**
+ * @Block(
+ *   id = "journey_talk_personalized_block",
+ *   admin_label = @Translation("Personalized block"),
+ * )
+ */
+class PersonalizedBlock extends BlockBase {
+
+  public function build() {
+    $funny_emojis = ['🤷', '😂', '🙈', '🐷', '🐑'];
+    return [
+      '#markup' => $this->t('Funny emoji just for you: @emoji
+          <br><em>(Hand-picked at @time!)</em>', [
+        '@emoji' => $funny_emojis[rand(0, count($funny_emojis) - 1)],
+        '@time' => (int) microtime(TRUE),
+      ]),
+    ];
+  }
+
+  public function getCacheContexts() {
+    return ['session'];
+  }
+
+}</code></pre>
+					</section>
+					<section id="use-case--3">
+						<pre class="fullscreen"><code class="php">/**
+ * @Block(
+ *   id = "journey_talk_cacheable_block",
+ *   admin_label = @Translation("Cacheable block"),
+ * )
+ */
+class CacheableBlock extends BlockBase {
+
+  public function build() {
+    return [
+      '#markup' => $this->t('%name must approve articles!', [
+        '%name' => User::load(1)->getAccountName(),
+      ]),
+    ];
+  }
+
+  protected function blockAccess(AccountInterface $account) {
+    return AccessResult::allowedIfHasPermission($account, 'create article content');
+  }
+
+  public function getCacheContexts() {
+    return ['user.permissions'];
+  }
+
+  public function getCacheTags() {
+    return ['user:1'];
+  }
+
+}
+</code></pre>
+					</section>
+				</section>
+				
+				<section id="live">
+					<h2>🎉 Live debug! 🔥</h2>
+				</section>
+				
+				<section id="testing--importance" data-background="img/7NzMjrPZrmixq.gif" data-background-size="contain" via="https://giphy.com/gifs/testing-7NzMjrPZrmixq">
+				</section>
+
+				<section>
+					<section id="testing--tags--blackbox">
+						<pre class="fullscreen"><code class="php">class CacheTagsTest extends BrowserTestBase {
+
+  // Tests that for cached pages, content changes are visible immediately.
+  public function testBlackbox() {
+    $this->assertThing('initial title');
+
+    Node::load(1)->setTitle('foobar')->save();
+
+    $this->assertThing('foobar');
+  }
+
+  protected function assertThing($title) {
+    $this->drupalGet('/some/path');
+    $this->assertRaw($title);
+  }
+
+}</code></pre>
+						<aside class="notes">
+							With blackbox testing, we're only asserting that things work <em>correctly</em>.
+						</aside>
+					</section>
+					<section id="testing--tags--whitebox">
+						<pre class="fullscreen"><code class="php">class CacheTagsTest extends BrowserTestBase {
+
+  // Tests that for cached pages, content changes are visible immediately.
+  public function testWhitebox() {
+    $this->assertThing('initial title', 'MISS', 'MISS');
+    $this->assertThing('initial title', 'HIT', 'HIT');
+
+    Node::load(1)->setTitle('foobar')->save();
+
+    $this->assertThing('foobar', 'MISS', 'MISS');
+    $this->assertThing('foobar', 'HIT', 'HIT');
+  }
+
+  protected function assertThing($title, $dpc, $pc) {
+    $this->drupalGet('/some/path');
+    $this->assertRaw($title);
+    $this->assertCacheTags(['node:1']);
+    $this->assertSame($this->drupalGetHeader('X-Drupal-Dynamic-Cache'), $dpc);
+    $this->assertSame($this->drupalGetHeader('X-Drupal-Cache'), $pc);
+  }
+
+}</code></pre>
+					</section>
+					<aside class="notes">
+						With whitebox testing, we're also asserting that things work <em>efficiently</em>, not just correctly. Depending on the needs of the project, this may be desirable. You can of course choose to only do this for the most critical feature only. 100% test coverage is not realistic — use test coverage strategically, to improve predictability and stability of the project!
+					</aside>
+				</section>
+
+				<section>
+					<section id="testing--contexts--blackbox">
+						<pre class="fullscreen"><code class="php">class CacheContextsTest extends BrowserTestBase {
+
+  // Tests that for cached pages, permission-dependent access is respected.
+  public function testBlackbox() {
+    $this->assertAsAdminAndAnon(TRUE, TRUE);
+    Node::load(1)->setUnpublished()->save();
+    $this->assertAsAdminAndAnon(TRUE, FALSE);
+  }
+
+  protected function assertAsAdminAndAnon($visible_for_admin, $visible_for_anon) {
+    $this->drupalLogin($this->administrator);
+    $this->assertThing($visible_for_admin);
+    $this->drupalLogout();
+    $this->assertThing($visible_for_anon);
+  }
+
+  protected function assertThing($is_visible) {
+    $this->drupalGet('/some/path');
+    $is_visible
+      ? $this->assertRaw('initial title')
+      : $this->assertNoRaw('initial title');
+  }
+
+}</code></pre>
+					<aside class="notes">
+						The examples above were for cache tags, so for instantaneous content change propagation. That makes for a good content authoring and site building experience. It's of course also important to be secure, to prevent information disclosure. So let's look at how we'd test cache contexts.
+					</aside>
+					</section>
+					<section id="testing--contexts--whitebox">
+						<pre class="fullscreen"><code class="php">class CacheContextsTest extends BrowserTestBase {
+
+  // Tests that for cached pages, permission-dependent access is respected.
+  public function testWhitebox() {
+    $this->assertAsAdminAndAnon(TRUE, TRUE);
+    Node::load(1)->setUnpublished()->save();
+    $this->assertAsAdminAndAnon(TRUE, FALSE);
+  }
+
+  protected function assertAsAdminAndAnon($visible_for_admin, $visible_for_anon) {
+    $this->drupalLogin($this->administrator);
+    $this->assertThing($visible_for_admin, 'MISS', NULL);
+    $this->assertThing($visible_for_admin, 'HIT', NULL);
+    $this->drupalLogout();
+    $this->assertThing($visible_for_anon, 'MISS', 'MISS');
+    $this->assertThing($visible_for_anon, 'HIT', 'HIT');
+  }
+
+  protected function assertThing($is_visible, $dpc, $pc) {
+    parent::assertThing($is_visible);
+    $this->assertCacheContexts(['user.permissions']);
+    $this->assertSame($this->drupalGetHeader('X-Drupal-Dynamic-Cache'), $dpc);
+    $this->assertSame($this->drupalGetHeader('X-Drupal-Cache'), $pc);
+  }
+
+}</code></pre>
+					</section>
+				</section>
+
+				<section data-background="img/7MZ0v9KynmiSA.gif" data-background-size="" via="https://giphy.com/gifs/test-testing-expected-7MZ0v9KynmiSA"></section>
+
+				<section id="questions">
+					<p style="font-size: 1000%">?</p>					
+				</section>
+
+				<section id="thanks">
+					<p style="font-size: 250%">🙇‍♂️</p>
+				</section>
+
+			</div>
+		</div>
+
+		<script src="src/reveal.js/lib/js/head.min.js"></script>
+		<script src="src/reveal.js/js/reveal.js"></script>
+
+		<script>
+			// More info https://github.com/hakimel/reveal.js#configuration
+			Reveal.initialize({
+				controls: false,
+				history: true,
+				showNotes: !window.location.search.match( /no-notes/gi ),
+
+				// More info https://github.com/hakimel/reveal.js#dependencies
+				dependencies: [
+					{ src: 'src/reveal.js/plugin/notes/notes.js', async: true },
+					{ src: 'src/reveal.js/plugin/highlight/highlight.js', async: true, callback: function() { hljs.initHighlightingOnLoad(); } }
+				]
+			});
+		</script>
+	</body>
+</html>
