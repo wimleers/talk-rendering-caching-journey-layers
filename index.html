@@ -118,15 +118,12 @@
 				<section>
 					<section id="use-case--1-uncacheable">
 						<pre class="fullscreen"><code class="php">/**
- * @Block(
- *   id = "journey_talk_uncacheable_block",
- *   admin_label = @Translation("Uncacheable block"),
- * )
+ * @Block(id = "journey_talk_uncacheable_block")
  */
 class UncacheableBlock extends BlockBase {
 
   public function build() {
-    sleep(1); // Pretend we're computing a better forecast 👍
+    usleep(250*1000); // Pretend we're computing a better forecast 👍
     return [
       '#markup' => $this->t('<p>Weather forecast at @time: ☔️.</p>', [
         '@time' => (int) microtime(TRUE),
@@ -143,20 +140,17 @@ class UncacheableBlock extends BlockBase {
 							Clearly we're dealing with Belgian weather forecast. Anybody from the U.K. will also feel right at home!
 						</aside>
 					</section>
-					<section id="use-case--2">
+					<section id="use-case--2-personalized-per-session">
 						<pre class="fullscreen"><code class="php">/**
- * @Block(
- *   id = "journey_talk_personalized_block",
- *   admin_label = @Translation("Personalized block"),
- * )
+ * @Block(id = "journey_talk_personalized_per_session_block")
  */
-class PersonalizedBlock extends BlockBase {
+class PersonalizedPerSessionBlock extends BlockBase {
 
   public function build() {
     $funny_emojis = ['🤷', '😂', '🙈', '🐷', '🐑'];
     return [
-      '#markup' => $this->t('Funny emoji just for you: @emoji
-          <br><em>(Hand-picked at @time!)</em>', [
+      '#markup' => $this->t('<p>Funny emoji just for you: @emoji</p>
+          <p>(Hand-picked at @time!)</p>', [
         '@emoji' => $funny_emojis[rand(0, count($funny_emojis) - 1)],
         '@time' => (int) microtime(TRUE),
       ]),
@@ -169,29 +163,50 @@ class PersonalizedBlock extends BlockBase {
 
 }</code></pre>
 					</section>
-					<section id="use-case--3">
+					<section id="use-case--2-personalized-per-user">
 						<pre class="fullscreen"><code class="php">/**
- * @Block(
- *   id = "journey_talk_cacheable_block",
- *   admin_label = @Translation("Cacheable block"),
- * )
+ * @Block(id = "journey_talk_personalized_per_user_block")
+ */
+class PersonalizedPerUserBlock extends BlockBase {
+
+  public function build() {
+    $funny_emojis = ['🤷', '😂', '🙈', '🐷', '🐑'];
+    return [
+      '#markup' => $this->t('<p>Today\'s funny emoji just for you: @emoji</p>
+          <p>(Hand-picked at @time!)</p>', [
+        '@emoji' => $funny_emojis[rand(0, count($funny_emojis) - 1)],
+        '@time' => (int) microtime(TRUE),
+      ]),
+    ];
+  }
+
+  public function getCacheContexts() {
+    return ['user'];
+  }
+
+  public function getCacheMaxAge() {
+    return 86400;
+  }
+
+}
+</code></pre>
+					</section>
+					<section id="use-case--3--cacheable">
+						<pre class="fullscreen"><code class="php">/**
+ * @Block(id = "journey_talk_cacheable_block")
  */
 class CacheableBlock extends BlockBase {
 
   public function build() {
     return [
-      '#markup' => $this->t('%name must approve articles!', [
+      '#markup' => $this->t('%name runs this site!', [
         '%name' => User::load(1)->getAccountName(),
       ]),
     ];
   }
 
   protected function blockAccess(AccountInterface $account) {
-    return AccessResult::allowedIfHasPermission($account, 'create article content');
-  }
-
-  public function getCacheContexts() {
-    return ['user.permissions'];
+    return AccessResult::allowedIf($account->id() != 1);
   }
 
   public function getCacheTags() {
