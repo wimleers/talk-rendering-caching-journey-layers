@@ -1,0 +1,4 @@
+name: 'Rendering & caching: a journey through the layers'
+description: 'The demo module used in the talk.'
+type: module
+core: 8.x
