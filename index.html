@@ -33,6 +33,14 @@
 			.reveal pre.fullscreen code {
 				max-height: none;
 			}
+			.reveal img.block-preview {
+				position: absolute;
+				bottom: 10%;
+				right: 5%;
+				border: none;
+				box-shadow: 0px 0px 30px 9px rgba(211, 211, 211, 0.75);
+				transform: rotate(-5deg) scale(1.55);
+			}
 		</style>
 
 		<!-- Printing and PDF exports -->
@@ -136,6 +144,7 @@ class UncacheableBlock extends BlockBase {
   }
 
 }</code></pre>
+						<img class="fragment block-preview" src="img/screenshots/uncacheable block.png">
 						<aside class="notes">
 							Clearly we're dealing with Belgian weather forecast. Anybody from the U.K. will also feel right at home!
 						</aside>
@@ -162,6 +171,7 @@ class PersonalizedPerSessionBlock extends BlockBase {
   }
 
 }</code></pre>
+					<img class="fragment block-preview" src="img/screenshots/personalized block (per session).png">
 					</section>
 					<section id="use-case--2-personalized-per-user">
 						<pre class="fullscreen"><code class="php">/**
@@ -190,6 +200,7 @@ class PersonalizedPerUserBlock extends BlockBase {
 
 }
 </code></pre>
+					<img class="fragment block-preview" src="img/screenshots/personalized block (per user).png">
 					</section>
 					<section id="use-case--3--cacheable">
 						<pre class="fullscreen"><code class="php">/**
@@ -215,6 +226,7 @@ class CacheableBlock extends BlockBase {
 
 }
 </code></pre>
+					<img class="fragment block-preview" src="img/screenshots/cacheable block.png">
 					</section>
 					<section id="download-demo-module">
 						<p style="font-size: 200%;">👩‍💻</p>
