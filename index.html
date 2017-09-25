@@ -107,6 +107,9 @@
 							I said I'd stay pragmatic, so I'm not going to take you through all details of the Drupal 8 render pipeline. For that, see my talk from 2.5 years ago. It's still accurate.</aside>
 					</section>
 					<section id="foundations--render-pipeline--pragmatic" data-background="img/diagram.jpg" data-background-size="contain">
+						<aside class="notes">
+							This is the render pipeline, presented in a more pragmatic way. Drupal receives a request, and calls a controller to handle that request. The controller returns a render array for the main content; the main content is decorated/surrounded by blocks which are also render arrays, the Renderer renders those render arrays into HTML fragments. By the time it reaches the Dynamic Page Cache layer, we've got an assembled page, but without the placeholders being replaced. Dynamic Page Cache caches these partial HTML responses, because they allow us to greatly reduce the amount of work that needs to be done. Next time when we request this particular page, we can skip all that work, and only need to replace those placeholders — a huge performance and scalability boost! Of course, before we can send it, we need to finalize that HTML response. If the page was requested by an anonymous user, we can replace those placeholders and let Page Cache cache it for the next anonymous user — because all anonymous users are treated as one and the same. Finally, if it's an authenticated user, and the BigPipe module is installed, then we send the page as it is cached by Dynamic Page Cache right away, but keep the connection open, and stream the replacements for those placeholders. Thanks to this strategy, the end user doesn't need to wait: they immediately see the majority of the page, and then they receive the personalized bits slightly later, making for a much nicer user experience.
+						</aside>
 					</section>
 				</section>
 				
