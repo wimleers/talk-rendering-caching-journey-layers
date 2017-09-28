@@ -70,7 +70,7 @@
 				<section id="practical" data-background="img/19bbg4cwuf7tyjpg.jpg" data-background-via="http://i.kinja-img.com/gawker-media/image/upload/s--w3wd0uOT--/19bbg4cwuf7tyjpg.jpg">
 					<img src="img/practical.jpg" width="40%" via="https://www.abebooks.com/9781853262876/Journey-Centre-Earth-Wordsworth-Classics-1853262870/plp">
 					<aside class="notes">
-						The goal of this talk is not to explain the technical details, but to help you in practice, by giving you a concrete understanding of how these layers cooperate.
+						The goal of this talk is not to explain the technical details or explain edge cases, but to help you in practice, by giving you a concrete understanding of how these layers cooperate in typical cases.
 					</aside>
 				</section>
 				
@@ -88,9 +88,11 @@
 							<tr class="fragment exception"><td style="padding-top: .5em;">max-age</td><td>freshness</td><td>🕰️&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;📈</td></tr>
 						</table>
 						<aside class="notes">
-							As I'm sure you all know, caching is about avoiding expensive computations by storing the computed output. Drupal 8 uses this extensively, as we'll see.<br>
-							Caching is trivial. What is not trivial, is cache invalidation. The joke is <q>There are only two hard problems in computer science, cache invalidation and naming things</q>. Because whenever the inputs change, even in the tiniest way, we need to ensure the cached output is not used. Drupal 7 and earlier is very bad at this. Most CMSes are! Because usually they fail to recognize <em>all</em> inputs. For example, they'll assume the output only depends on the URL.<br>
-							Drupal 8 has solved the cache invalidation problem, through two key concepts: tags and contexts. Tags enable us to know when stored data has changed — stored data which is used in the computed output, for example an author's hobby might have changed. Contexts enable us to vary consistently by circumstance, for example whether it's raining or not, whether the current user has a certain permission or not, and so on.
+							As I'm sure you all know, caching is about avoiding expensive computations by storing the computed output. Drupal 8 uses this extensively.<br>
+							Caching is trivial. What is not trivial, is cache invalidation. As the saying goes, <q>There are only two hard problems in computer science, cache invalidation and naming things</q>. Because whenever the inputs change, even in the tiniest way, we need to ensure the cached output is not reused, because it must be considered stale. Drupal 7 is very bad at this. Most CMSes are! Because usually they fail to recognize <em>all</em> inputs. For example, they'll assume the output only depends on the URL.<br>
+							Drupal 8 has solved the cache invalidation problem, through two key concepts: tags and contexts. Cache tags enable us to know when stored data has changed — stored data which is used in the computed output, for example an author's hobby might have changed. Cache contexts enable us to vary consistently by circumstance, for example whether it's raining or not, whether the current user has a certain permission or not, and so on.<br>
+							Finally, there's the concept of max-age. This is used less often — it's not used for explicit invalidation unlike cache tags and cache contexts, but for implicit invalidation, for data that has a limited freshness, data that is highly time-sensitive.<br>
+							So: caching allows us to save time by consuming storage space. We need to ensure that we never use stale outputs though, and for that Drupal deals with cache invalidation via tags and contexts.
 					</section>
 					<section id="foundations--render-pipeline--details">
 						<figure>
